@@ -2,11 +2,9 @@ package com.aryan.dhankar.roompersistencelibrary;
 
 import android.app.ProgressDialog;
 import android.arch.lifecycle.LifecycleActivity;
-import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -42,7 +40,11 @@ public class MainActivity extends LifecycleActivity implements View.OnClickListe
         firstname=(EditText)findViewById(R.id.firstname);
         lastname=(EditText)findViewById(R.id.lastname);
        db =Obj.getDb();
+
+        mCompositeDisposable = new CompositeDisposable();
+
         //button
+
         insert=(Button)findViewById(R.id.insert);
         retreive=(Button)findViewById(R.id.retreive);
         retreivedatausingRxjava=(Button)findViewById(R.id.retreivedatausingRxjava);
@@ -54,18 +56,20 @@ public class MainActivity extends LifecycleActivity implements View.OnClickListe
         insert.setOnClickListener(this);
         retreive.setOnClickListener(this);
         retreivedatausingRxjava.setOnClickListener(this);
-        subscribeUiBooks();
+        //subscribeUiBooks();
     }
 
     private void subscribeUiBooks() {
+mViewModel.books.observe(this,this::handleResponse);
+        /*
         mViewModel.books.observe(this, new Observer<List<User>>() {
             @Override
             public void onChanged(@NonNull final List<User> books) {
                 showBooksInUi(books, datatoshow);
             }
-        });
+        });*/
     }
-
+/*
     private static void showBooksInUi(final @NonNull List<User> books,
                                       final TextView booksTextView) {
         StringBuilder sb = new StringBuilder();
@@ -76,7 +80,7 @@ public class MainActivity extends LifecycleActivity implements View.OnClickListe
 
         }
         booksTextView.setText(sb.toString());
-    }
+    }*/
     @Override
     public void onClick(View v) {
         if (v==insert){
@@ -102,7 +106,6 @@ public class MainActivity extends LifecycleActivity implements View.OnClickListe
         }
         if (v==retreivedatausingRxjava){
             datatoshow.setText("");
-            mCompositeDisposable = new CompositeDisposable();
             mCompositeDisposable.add(db.userDao().getrxall()
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribeOn(Schedulers.io())
@@ -131,9 +134,9 @@ public class MainActivity extends LifecycleActivity implements View.OnClickListe
 
 
 
-    public class setdata extends AsyncTask<Object, Object, Long>
+    private class setdata extends AsyncTask<Object, Object, Long>
     {
-        String response="nothing";
+
         ProgressDialog pd;
 
 
