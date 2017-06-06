@@ -6,6 +6,13 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     >
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 <EditText
     android:id="@+id/firstname"
     android:textColor="#000"
@@ -26,17 +33,33 @@
         android:text="insert"
         android:textColor="#000"
         android:layout_height="40dp" />
-
+<LinearLayout
+    android:weightSum="1"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
     <Button
+        android:layout_weight="0.5"
         android:layout_marginTop="10dp"
         android:layout_width="80dp"
         android:id="@+id/retreive"
-        android:text="retreive"
+        android:text="retreive Using View Model"
         android:textColor="#000"
         android:layout_height="40dp" />
+    <Button
+        android:layout_weight="0.5"
+        android:layout_marginTop="10dp"
+        android:layout_width="80dp"
+        android:id="@+id/retreivedatausingRxjava"
+        android:text="retreive Using RXjava"
+        android:textColor="#000"
+        android:layout_height="40dp" />
+</LinearLayout>
     <TextView
         android:layout_marginTop="10dp"
         android:id="@+id/datatoshow"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
+    </LinearLayout>
+    </ScrollView>
 </LinearLayout>

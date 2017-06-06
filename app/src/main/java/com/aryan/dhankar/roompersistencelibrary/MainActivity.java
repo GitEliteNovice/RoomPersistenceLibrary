@@ -1,10 +1,12 @@
 package com.aryan.dhankar.roompersistencelibrary;
 
 import android.app.ProgressDialog;
-import android.arch.persistence.room.Room;
+import android.arch.lifecycle.LifecycleActivity;
+import android.arch.lifecycle.Observer;
+import android.arch.lifecycle.ViewModelProviders;
 import android.os.AsyncTask;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -16,38 +18,65 @@ import com.sdsmdg.tastytoast.TastyToast;
 
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener{
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.schedulers.Schedulers;
 
+public class MainActivity extends LifecycleActivity implements View.OnClickListener{
     EditText firstname,lastname;
-    Button insert,retreive;
+    Button insert,retreive,retreivedatausingRxjava;
     TextView datatoshow;
     String fname,lname;
     User user;
-    List<User> result;
-    AppDatabase db;
-
+    public AppDatabase db;
+    AppController Obj;
+    GetDataViewModel mViewModel;
+    private CompositeDisposable mCompositeDisposable;
+    long us;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        db = Room.databaseBuilder(getApplicationContext(),
-                AppDatabase.class, "database-name").build();
+       Obj= AppController.getInstance();
         //edit text
         firstname=(EditText)findViewById(R.id.firstname);
         lastname=(EditText)findViewById(R.id.lastname);
-
+       db =Obj.getDb();
         //button
         insert=(Button)findViewById(R.id.insert);
         retreive=(Button)findViewById(R.id.retreive);
-
+        retreivedatausingRxjava=(Button)findViewById(R.id.retreivedatausingRxjava);
         //texttview
         datatoshow=(TextView)findViewById(R.id.datatoshow);
 
+        mViewModel = ViewModelProviders.of(this).get(GetDataViewModel.class);
+
         insert.setOnClickListener(this);
         retreive.setOnClickListener(this);
+        retreivedatausingRxjava.setOnClickListener(this);
+        subscribeUiBooks();
     }
 
+    private void subscribeUiBooks() {
+        mViewModel.books.observe(this, new Observer<List<User>>() {
+            @Override
+            public void onChanged(@NonNull final List<User> books) {
+                showBooksInUi(books, datatoshow);
+            }
+        });
+    }
+
+    private static void showBooksInUi(final @NonNull List<User> books,
+                                      final TextView booksTextView) {
+        StringBuilder sb = new StringBuilder();
+
+        for (User book : books) {
+            sb.append(book.getFirstName()+" "+book.getLastName());
+            sb.append("\n");
+
+        }
+        booksTextView.setText(sb.toString());
+    }
     @Override
     public void onClick(View v) {
         if (v==insert){
@@ -68,56 +97,41 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
 
         if (v==retreive){
-            new getdata().execute();
+            datatoshow.setText("");
+            subscribeUiBooks();
         }
-    }
-
-    public class getdata extends AsyncTask<String,String,String>
-    {
-        String response="nothing";
-        ProgressDialog pd;
-
-
-        @Override
-        protected void onPreExecute() {
-            pd=new ProgressDialog(MainActivity.this);
-            pd.setMessage("Inserting");
-            pd.show();
-        }
-
-        @Override
-        protected String doInBackground(String... params) {
-            try{
-                result= db.userDao().getAll();
-                String data=" ";
-                for (int i=0;i<result.size();i++){
-                    data+=result.get(i).getFirstName()+" "+result.get(i).getLastName()+", ";
-                }
-
-                response=data;
-
-            }catch (Exception e)
-            {
-                e.printStackTrace();
-            }
-
-            return response;
-        }
-
-        @Override
-        protected void onPostExecute(String s) {
-            try{
-         pd.dismiss();
-                datatoshow.setText(s);
-            }catch (Exception e)
-            {
-                e.printStackTrace();
-            }
+        if (v==retreivedatausingRxjava){
+            datatoshow.setText("");
+            mCompositeDisposable = new CompositeDisposable();
+            mCompositeDisposable.add(db.userDao().getrxall()
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribeOn(Schedulers.io())
+                    .subscribe(this::handleResponse,this::handleError));
 
         }
     }
 
-    public class setdata extends AsyncTask<String,String,String>
+    private void handleResponse(List<User> users) {
+        StringBuilder sb = new StringBuilder();
+
+        for (User book : users) {
+            sb.append(book.getFirstName()+" "+book.getLastName());
+            sb.append("\n");
+
+        }
+        datatoshow.setText(sb.toString());
+
+    }
+
+    private void handleError(Throwable throwable) {
+        TastyToast.makeText(MainActivity.this, "Error", TastyToast.LENGTH_LONG,
+                TastyToast.SUCCESS);
+
+    }
+
+
+
+    public class setdata extends AsyncTask<Object, Object, Long>
     {
         String response="nothing";
         ProgressDialog pd;
@@ -131,23 +145,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
 
         @Override
-        protected String doInBackground(String... params) {
+        protected Long doInBackground(Object... params) {
             try{
-                db.userDao().insert(user);
+            us=   db.userDao().insert(user);
             }catch (Exception e)
             {
                 e.printStackTrace();
             }
 
-            return response;
+            return us;
         }
 
         @Override
-        protected void onPostExecute(String s) {
+        protected void onPostExecute(Long s) {
             try{
                 pd.dismiss();
-                TastyToast.makeText(MainActivity.this, "Successfully inserted", TastyToast.LENGTH_LONG,
-                        TastyToast.SUCCESS);
+
+                    TastyToast.makeText(MainActivity.this, "Successfully inserted"+us, TastyToast.LENGTH_LONG,
+                            TastyToast.SUCCESS);
+
+
 
             }catch (Exception e)
             {
